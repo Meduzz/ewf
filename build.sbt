@@ -1,6 +1,6 @@
 name := "ewf"
 
-version := "20180121"
+version := "20180126"
 
 scalaVersion := "2.11.12"
 

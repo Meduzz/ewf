@@ -5,7 +5,11 @@ import se.chimps.embeddable.web.framework.api.{HttpRequest, HttpResponse, Respon
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.matching.Regex
 
-case class Controller(routes:Seq[Route] = Seq()) extends ResponseBuilders {
+case class Controller(routes:Seq[Route] = Seq(),
+	                     notFoundAction:Action = Defaults.notFound,
+	                     errorHandler:PartialFunction[Throwable, HttpResponse] = Defaults.errorMapping
+                     ) extends ResponseBuilders {
+
 	def GET(url:String, action:Action):Controller = {
 		copy(routes = routes :+ register("GET", url, action))
 	}
@@ -34,6 +38,14 @@ case class Controller(routes:Seq[Route] = Seq()) extends ResponseBuilders {
 		copy(routes = routes :+ register(method, url, action))
 	}
 
+	def orElse(action:Action):Controller = {
+		copy(notFoundAction = action)
+	}
+
+	def catching(func:PartialFunction[Throwable, HttpResponse]):Controller = {
+		copy(errorHandler = func)
+	}
+
 	def handle(request:HttpRequest)(implicit ec:ExecutionContext):Future[HttpResponse] = {
 		routes
 			.filter(r => r.method == request.method)
@@ -49,12 +61,13 @@ case class Controller(routes:Seq[Route] = Seq()) extends ResponseBuilders {
 					val params = r.params.zip(groupVals).toMap
 					val req = params.foldLeft(request)((a,b) => a.withParam(b._1, b._2))
 					r.action.handle(req)
+				  	.recover(errorHandler)
 				} else {
-					Future(notFound())
+					notFoundAction.handle(request)
 				}
 			}
 			case None => {
-				Future(notFound())
+				notFoundAction.handle(request)
 			}
 		}
 	}

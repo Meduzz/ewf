@@ -27,31 +27,31 @@ class ControllerTest extends FunSuite with Matchers with RequestBuilders with Re
 		val asdfRes = subject.handle(HttpRequest("ASDF", "/", Map(), Map(), None))
 
 		whenReady(getRes) { res =>
-			verify(res, 200, Map("Content-Type" -> ""), "get".getBytes("utf-8"))
+			verify(res, 200, Map("Content-Type" -> ""), Equals("get"))
 		}
 
 		whenReady(postRes) { res =>
-			verify(res, 200, Map("Content-Type" -> ""), "post".getBytes("utf-8"))
+			verify(res, 200, Map("Content-Type" -> ""), Equals("post"))
 		}
 
 		whenReady(putRes) { res =>
-			verify(res, 200, Map("Content-Type" -> ""), "put".getBytes("utf-8"))
+			verify(res, 200, Map("Content-Type" -> ""), Equals("put"))
 		}
 
 		whenReady(deleteRes) { res =>
-			verify(res, 200, Map("Content-Type" -> ""), "delete".getBytes("utf-8"))
+			verify(res, 200, Map("Content-Type" -> ""), Equals("delete"))
 		}
 
 		whenReady(headRes) { res =>
-			verify(res, 200, Map("Content-Type" -> ""), "head".getBytes("utf-8"))
+			verify(res, 200, Map("Content-Type" -> ""), Equals("head"))
 		}
 
 		whenReady(patchRes) { res =>
-			verify(res, 200, Map("Content-Type" -> ""), "patch".getBytes("utf-8"))
+			verify(res, 200, Map("Content-Type" -> ""), Equals("patch"))
 		}
 
 		whenReady(asdfRes) { res =>
-			verify(res, 200, Map("Content-Type" -> ""), "asdf".getBytes("utf-8"))
+			verify(res, 200, Map("Content-Type" -> ""), Equals("asdf"))
 		}
 	}
 
@@ -69,11 +69,11 @@ class ControllerTest extends FunSuite with Matchers with RequestBuilders with Re
 		val notfound = subject.handle(post("/", "test"))
 
 		whenReady(response) { res =>
-			verify(res, 200, Map("Content-Type" -> "text/plain"), "a b c".getBytes("utf-8"))
+			verify(res, 200, Map("Content-Type" -> "text/plain"), Equals("a b c"))
 		}
 
 		whenReady(notfound) { res =>
-			verify(res, 404, Map("Content-Type" -> "text/plain"), "Not found.".getBytes("utf-8"))
+			verify(res, 404, Map("Content-Type" -> "text/html"), Contains("/ was not found."))
 		}
 	}
 
@@ -93,11 +93,11 @@ class ControllerTest extends FunSuite with Matchers with RequestBuilders with Re
 		val bytesPost = subject.handle(post("/halp", "bytes"))
 
 		whenReady(formPost) { res =>
-			verify(res, 200, Map("Content-Type" -> ""), "HALP me form".getBytes("utf-8"))
+			verify(res, 200, Map("Content-Type" -> ""), Equals("HALP me form"))
 		}
 
 		whenReady(bytesPost) { res =>
-			verify(res, 200, Map("Content-Type" -> ""), "HALP me bytes".getBytes("utf-8"))
+			verify(res, 200, Map("Content-Type" -> ""), Equals("HALP me bytes"))
 		}
 	}
 
@@ -117,11 +117,34 @@ class ControllerTest extends FunSuite with Matchers with RequestBuilders with Re
 		val bytesPut = subject.handle(put("/halp", "bytes"))
 
 		whenReady(formPut) { res =>
-			verify(res, 200, Map("Content-Type" -> ""), "HALP me form".getBytes("utf-8"))
+			verify(res, 200, Map("Content-Type" -> ""), Equals("HALP me form"))
 		}
 
 		whenReady(bytesPut) { res =>
-			verify(res, 200, Map("Content-Type" -> ""), "HALP me bytes".getBytes("utf-8"))
+			verify(res, 200, Map("Content-Type" -> ""), Equals("HALP me bytes"))
+		}
+	}
+
+	test("that 404 are beautiful like a sunset") {
+		val subject = Controller()
+
+		val nothing = subject.handle(get("/"))
+
+		whenReady(nothing) { res =>
+			verify(res, 404, Map("Content-Type" -> "text/html"), Contains("/ was not found."))
+		}
+	}
+
+	test("a 500 to die for") {
+		val subject = Controller()
+	  	.GET("/crash", Sync { req =>
+			  throw new RuntimeException("Crashing")
+		  })
+
+		val response = subject.handle(get("/crash"))
+
+		whenReady(response) { res =>
+			verify(res, 500, Map("Content-Type" -> "text/html"), Contains("se.chimps.embeddable.web.framework.ControllerTest$$anonfun$6$$anonfun$1"))
 		}
 	}
 }
